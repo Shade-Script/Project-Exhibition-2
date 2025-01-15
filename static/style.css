@@ -1,0 +1,71 @@
+body {
+  font-family: sans-serif;
+  margin: 0; /* Remove default body margin */
+  background-color: white;
+  display: flex;
+  flex-direction: column; /* Stack header, background and content */
+  min-height: 100vh; /* Ensure background covers full height */
+}
+.header {
+  background-color: #00529B;  /* St. Patrick's Blue */
+  padding: 20px;
+  text-align: center;
+}
+.logo {
+  width: auto; /* Maintain aspect ratio */
+  max-height: 150px;
+  height: 150px;
+}
+.background-image {
+  background-image: url("/static/Collage.jpeg");
+  background-size: 100% auto;
+  background-position: center;
+  filter: blur(5px); /* Apply Gaussian blur */
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+}
+.content {
+  background-color: rgba(255, 255, 255, 0.8); /* White with transparency for content */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 400px;
+  margin: 50px auto;
+}
+
+h1 {
+  color: #333;
+  text-align: center;
+}
+
+form {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="file"] {
+  margin-bottom: 10px;
+}
+
+button {
+  background-color: #5cb85c;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #4cae4c;
+}

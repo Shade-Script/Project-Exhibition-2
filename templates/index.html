@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Scheduler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <img class="logo" src="{{ url_for('static', filename='white_logo.png') }}" alt="Logo">
+    </div>
+
+    <div class="background-image"></div>
+
+    <div class="content">
+        <h1>Weekly Scheduler</h1>
+
+        <form method="post" enctype="multipart/form-data" action="/upload">
+            <label for="schedule_image">Upload Your Schedule Image:</label>
+            <input type="file" id="schedule_image" name="schedule_image" accept="image/*" required>
+            <br><br>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+</body>
+</html>

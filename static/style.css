@@ -1,18 +1,18 @@
 body {
   font-family: sans-serif;
-  margin: 0; /* Remove default body margin */
+  margin: 0;
   background-color: white;
   display: flex;
-  flex-direction: column; /* Stack header, background and content */
-  min-height: 100vh; /* Ensure background covers full height */
+  flex-direction: column;
+  min-height: 100vh;
 }
 .header {
-  background-color: #00529B;  /* St. Patrick's Blue */
+  background-color: #00529B;
   padding: 20px;
   text-align: center;
 }
 .logo {
-  width: auto; /* Maintain aspect ratio */
+  width: auto;
   max-height: 150px;
   height: 150px;
 }
@@ -20,7 +20,7 @@ body {
   background-image: url("/static/Collage.jpeg");
   background-size: 100% auto;
   background-position: center;
-  filter: blur(5px); /* Apply Gaussian blur */
+  filter: blur(5px);
   position: fixed;
   top: 0;
   right: 0;
@@ -29,12 +29,12 @@ body {
   z-index: -1;
 }
 .content {
-  background-color: rgba(255, 255, 255, 0.8); /* White with transparency for content */
+  background-color: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  width: 400px;
-  margin: 50px auto;
+  width: 95%;
+  margin: 20px auto;
 }
 
 h1 {
@@ -46,7 +46,6 @@ form {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  
 }
 
 label {
@@ -68,4 +67,39 @@ button {
 }
 button:hover {
   background-color: #4cae4c;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table, th, td {
+  border: 1px solid black;
+}
+
+th, td {
+  text-align: center;
+  padding: 5px;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+/* Styles for Textareas (Editable Cells) */
+textarea {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  border: none;
+  resize: none;
+  overflow: auto;
+  display: block;
+  line-height: 1; /* Removed extra space by reducing line height */
+  padding-top: 2px; /* Added to top align text */
 }

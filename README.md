@@ -11,9 +11,7 @@ This web application is designed specifically for VIT (Vellore Institute of Tech
 *   **User-Friendly Interface:** Simple and intuitive design for easy navigation and use.
 *   **Open Source:** This project is open-source and welcomes contributions.
 
-## Screenshots (Optional)
-
-Include screenshots of your application to showcase its features. Example:
+## Screenshots:
 ![image](https://github.com/user-attachments/assets/6f49ebfa-90b9-4229-af0d-8c7fab2f53e9)
 
 ![image](https://github.com/user-attachments/assets/c0e929f5-75e8-4a3d-b250-be25cc521214)

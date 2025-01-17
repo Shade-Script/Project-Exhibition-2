@@ -29,7 +29,7 @@ This web application is designed specifically for VIT (Vellore Institute of Tech
 1.  **Clone the repository**
 2.  **Navigate to the project directory:**
 3. **Install these dependencies/Modules:**
-    pip install flask pillow
+    pip install flask pillow & 
     pip install -q -U google-generativeai 
 5.  **Run the application:**
     Run app.py and go to localhost

@@ -119,15 +119,32 @@ def upload_image():
         return render_template('index.html', time_slots=time_slots, timetable=timetable, selected_options=selected_options, extracted_data=extracted_data)
 
     return redirect(url_for('index'))
-
+"""
 @app.route("/submit_timetable", methods=["POST"])
 def submit_timetable():
     if request.method == "POST":
-      timetable_data = request.form.get("timetable_data") #extracts the json string
-      if timetable_data:
-        print(timetable_data) #do what you want with the data here.
-    return redirect(url_for('index'))
-
+        timetable_data = {}
+        
+        # Parse the form data
+        for key, value in request.form.items():
+            if key.startswith('timetable_data['):
+                # Extract day and slot from the key format: timetable_data[day][slot]
+                match = re.match(r'timetable_data\[(.*?)\]\[(.*?)\]', key)
+                if match:
+                    day = match.group(1)
+                    slot = match.group(2)
+                    
+                    if day not in timetable_data:
+                        timetable_data[day] = {}
+                    
+                    timetable_data[day][slot] = value
+        
+        # Now process the timetable_data dictionary as needed
+        # You could save it to a file, database, etc.
+        print(timetable_data)
+        
+        return redirect(url_for('index'))
+"""
 if __name__ == "__main__":
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)

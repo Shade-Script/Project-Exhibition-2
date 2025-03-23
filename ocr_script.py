@@ -7,7 +7,7 @@ import base64
 import time
 
 # Move the API key configuration here, outside the function
-genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+genai.configure(api_key="AIzaSyChpgbGn8fd1hmIAXEUzHrvMYsYViDqywE")
 
 def run_ocr_and_extract(image_path, max_retries=3, retry_delay=10):
     """

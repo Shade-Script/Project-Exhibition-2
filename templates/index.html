@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="header">
-        <img class="logo" src="{{ url_for('static', filename='white_logo_logo.jpeg') }}" alt="Logo">
+        <img class="logo" src="{{ url_for('static', filename='white_logo.png') }}" alt="Logo">
     </div>
 
     <div class="background-image"></div>
@@ -20,14 +20,14 @@
                 <label for="schedule_image">Upload Your Schedule Image:</label>
                 <input type="file" id="schedule_image" name="schedule_image" accept="image/*" required>
                 <br><br>
-               <!-- Display Options Form -->
-                    <div>
-                        <label>Display Options:</label>
-                        <input type="checkbox" name="display_options" value="course_code" {% if 'course_code' in selected_options %}checked{% endif %}> Course Code
-                        <input type="checkbox" name="display_options" value="course_name" {% if 'course_name' in selected_options %}checked{% endif %}> Course Name
-                        <input type="checkbox" name="display_options" value="faculty_name" {% if 'faculty_name' in selected_options %}checked{% endif %}> Faculty Name
-                        <input type="checkbox" name="display_options" value="venue" {% if 'venue' in selected_options %}checked{% endif %}> Venue
-                    </div>
+                <!-- Display Options Form -->
+                <div>
+                    <label>Display Options:</label>
+                    <input type="checkbox" name="display_options" value="course_code" {% if 'course_code' in selected_options %}checked{% endif %}> Course Code
+                    <input type="checkbox" name="display_options" value="course_name" {% if 'course_name' in selected_options %}checked{% endif %}> Course Name
+                    <input type="checkbox" name="display_options" value="faculty_name" {% if 'faculty_name' in selected_options %}checked{% endif %}> Faculty Name
+                    <input type="checkbox" name="display_options" value="venue" {% if 'venue' in selected_options %}checked{% endif %}> Venue
+                </div>
                 <button type="submit">Upload</button>
             </form>
         {% endif %}
@@ -37,7 +37,7 @@
         <div class="results">
             <h2>Extracted Timetable:</h2>
             <form method="post" action="/submit_timetable">
-                <table border="1">
+                <table>
                     <thead>
                         <tr>
                             <th>Day / Time</th>
@@ -50,24 +50,23 @@
                     <tbody>
                         {% for day, slots in time_slots.items() %}
                             <tr>
-                                <td>{{ day }}</td>
+                                <td class="day-cell">{{ day }}</td>
                                 {% for slot_id, slot_info in slots.items() %}
-                                    <td>
-                                        <textarea name="timetable_data[{{day}}][{{slot_id}}]">
-                                            {% for info in timetable[day][slot_id] %}
-                                                {{ info | join(", ") | trim }}
-                                            {% endfor %}
-                                        </textarea>
+                                    <td class="schedule-cell">
+                                        {% for info in timetable[day][slot_id] %}
+                                            {{ info | join(", ") | trim }}
+                                        {% endfor %}
+                                        <input type="hidden" name="timetable_data[{{day}}][{{slot_id}}]" value="{% for info in timetable[day][slot_id] %}{{ info | join(", ") | trim }}{% endfor %}">
                                     </td>
                                 {% endfor %}
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <button type="submit">Submit Changes</button>
+                <button type="submit">Submit</button>
             </form>
         </div>
-    {% endif %}
+        {% endif %}
 
         {% if error_message %}
         <div class="error">

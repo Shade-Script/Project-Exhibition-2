@@ -1,0 +1,8 @@
+Flask
+google-generativeai
+Pillow
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv  # To load environment variables (recommended for API keys)
+requests       # Often needed by google libs

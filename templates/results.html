@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Review & Add to Calendar</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <!-- Tabulator CSS (using Bootstrap 5 theme) -->
+    <link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet">
+    <style>
+        body { padding-top: 40px; padding-bottom: 40px; background-color: #f5f5f5; }
+        .container { max-width: 1140px; /* Wider container for table */ background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .spinner-border { display: none; }
+        .processing { cursor: not-allowed; opacity: 0.7; }
+        .processing .spinner-border { display: inline-block; }
+        .processing span:not(.spinner-border) { vertical-align: middle; margin-left: 5px; }
+        #timetable-table { margin-top: 20px; margin-bottom: 30px; border: 1px solid #dee2e6; border-radius: .25rem; } /* Style table container */
+        .tabulator { font-size: 0.9rem; } /* Adjust font size */
+        .tabulator .tabulator-header .tabulator-col { background-color: #f8f9fa; } /* Header background */
+        .date-range-section { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
+        .auth-section { margin-top: 20px; padding: 15px; border: 1px solid #ffc107; background-color: #fff3cd; border-radius: 5px;}
+        .action-buttons { margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; }
+        .alert { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+             <h1 class="h3 mb-0 fw-normal">Review Schedule & Add to Calendar</h1>
+             <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary">Upload New Image</a>
+        </div>
+
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% if extracted_data is defined %}
+            <p class="text-muted">
+                {% if extracted_data %}
+                    Review and edit the schedule data below. You can double-click cells to edit them. Changes made here will be saved to the calendar. Add or remove rows as needed.
+                {% else %}
+                    No schedule data was automatically extracted. You can manually add rows to the table below to create your timetable.
+                {% endif %}
+            </p>
+
+            <!-- Tabulator Table Container -->
+            <div id="timetable-table"></div>
+             <div class="mt-2">
+                 <button id="add-row" class="btn btn-sm btn-outline-success">Add Row</button>
+                 <button id="delete-row" class="btn btn-sm btn-outline-danger">Delete Selected Row(s)</button>
+            </div>
+
+
+            <hr>
+
+            {% if not google_authenticated %}
+                <div class="auth-section">
+                    <p><strong>Action Required:</strong> You need to authorize this app to access your Google Calendar before you can add these events.</p>
+                    <a href="{{ url_for('authorize') }}" class="btn btn-warning">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-google me-2" viewBox="0 0 16 16">
+                            <path d="M15.545 6.558a9.4 9.4 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.7 7.7 0 0 1 5.352 2.082l-2.284 2.284A4.35 4.35 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.8 4.8 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.7 3.7 0 0 0 1.599-2.431H8v-3.08z"/>
+                        </svg>
+                        Authorize with Google
+                    </a>
+                </div>
+             {% else %}
+                 <p class="text-success"><i class="bi bi-check-circle-fill"></i> You are authenticated with Google.</p>
+                 <form method="POST" action="{{ url_for('create_google_events') }}" id="create-events-form">
+                     <!-- Date Range Inputs -->
+                     <div class="date-range-section">
+                         <h5 class="mb-3">Set Event Date Range</h5>
+                         <div class="row g-3 align-items-center">
+                             <div class="col-md-6">
+                               <label for="start_date" class="form-label">Events Start Date:</label>
+                               <input type="date" id="start_date" name="start_date" class="form-control" required>
+                             </div>
+                             <div class="col-md-6">
+                               <label for="end_date" class="form-label">Events End Date:</label>
+                               <input type="date" id="end_date" name="end_date" class="form-control" required>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- Hidden input to store edited data -->
+                     <input type="hidden" name="edited_data" id="edited_data_input">
+
+                     <div class="action-buttons text-end">
+                         <button class="btn btn-lg btn-success" type="submit" id="create-button">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-plus-fill me-2" viewBox="0 0 16 16">
+                              <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M8.5 8.5V10H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V11H6a.5.5 0 0 1 0-1h1.5V8.5a.5.5 0 0 1 1 0"/>
+                            </svg>
+                            <span>Add to Google Calendar</span>
+                         </button>
+                     </div>
+                 </form>
+            {% endif %}
+
+        {% else %}
+            {# This case should not be reachable if session['extracted_data'] is always set in /upload #}
+            <div class="alert alert-danger" role="alert">
+                An unexpected error occurred. No data found in session. Please try uploading again.
+            </div>
+             <div class="action-buttons text-center">
+                 <a href="{{ url_for('index') }}" class="btn btn-primary">Start Over</a>
+            </div>
+        {% endif %}
+
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Tabulator JS -->
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
+    <!-- Luxon for date formatting (optional but recommended by Tabulator) -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+     <!-- Bootstrap Icons (optional for better UI) -->
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+
+    <script>
+        // Get data passed from Flask (safely converts Python list/dict to JSON)
+        const initialTableData = {{ extracted_data|tojson if extracted_data is defined else '[]'|safe }};
+        let timetableTabulator = null; // Variable to hold the Tabulator instance
+
+        // Define Tabulator columns - make them editable
+        const columns = [
+            { title: "Course Code", field: "course_code", editor: "input", headerFilter: "input", width: 150 }, // Adjust width as needed
+            { title: "Course Name", field: "course_name", editor: "input", headerFilter: "input", minWidth: 200 },
+            { title: "Faculty", field: "faculty_name", editor: "input", headerFilter: "input", width: 180 },
+            { title: "Venue", field: "venue", editor: "input", headerFilter: "input", width: 120 },
+            {
+                title: "Slots (comma/space separated)", // Clarify input format
+                field: "slots",
+                editor: "input", // Simple text input for editing
+                headerFilter: "input",
+                formatter: function(cell, formatterParams, onRendered) {
+                    // Display slots list as comma-separated string
+                    const slotsList = cell.getValue();
+                    return Array.isArray(slotsList) ? slotsList.join(', ') : (slotsList || ""); // Handle null/undefined
+                },
+                 tooltip: function(cell){ // Show tooltip with original array if needed
+                    const slotsList = cell.getValue();
+                    return Array.isArray(slotsList) ? `Original array: ${JSON.stringify(slotsList)}` : (slotsList || "");
+                 }
+            }
+        ];
+
+        // Initialize Tabulator
+        try {
+            timetableTabulator = new Tabulator("#timetable-table", {
+                data: initialTableData,     // Load initial data
+                columns: columns,           // Define columns
+                layout: "fitColumns",       // Fit columns to width of table
+                placeholder: "No Timetable Data - Use 'Add Row' below", // Message if data is empty
+                movableColumns: true,       // Allow column reordering
+                selectable: true,           // Allow row selection for deletion
+                history: true,              // Enable undo/redo (ctrl+z/ctrl+y)
+                // Add validation if desired
+                // validationMode:"highlight", // highlight cells with validation errors
+            });
+        } catch (error) {
+             console.error("Error initializing Tabulator:", error);
+             document.getElementById("timetable-table").innerHTML = "<div class='alert alert-danger'>Error initializing editable table. Please check console.</div>";
+        }
+
+
+        // --- Add/Delete Row Functionality ---
+        if (timetableTabulator) {
+            document.getElementById("add-row").addEventListener("click", function(){
+                timetableTabulator.addRow({}, true); // Add blank row at the top
+            });
+
+            document.getElementById("delete-row").addEventListener("click", function(){
+                const selectedRows = timetableTabulator.getSelectedRows();
+                if (selectedRows.length > 0) {
+                    if (confirm(`Are you sure you want to delete ${selectedRows.length} selected row(s)?`)) {
+                        selectedRows.forEach(function(row){
+                            row.delete();
+                        });
+                    }
+                } else {
+                     alert("Please select row(s) to delete first by clicking on them.");
+                }
+            });
+        }
+
+
+        // --- Form Submission Handling ---
+        const form = document.getElementById('create-events-form');
+        const submitButton = document.getElementById('create-button');
+        const editedDataInput = document.getElementById('edited_data_input');
+
+        if (form && submitButton) {
+            const buttonText = submitButton.querySelector('span:not(.spinner-border)');
+            const spinner = submitButton.querySelector('.spinner-border');
+
+            form.addEventListener('submit', function(event) {
+                // 1. Get current data from Tabulator
+                let currentTableData = [];
+                if (timetableTabulator) {
+                    // Filter out potentially empty rows if needed, or validate them
+                    // For now, get all data
+                    currentTableData = timetableTabulator.getData();
+                }
+
+                // Basic check: ensure there's at least one row with some data
+                const hasData = currentTableData.some(row => row.course_code || row.course_name || row.slots);
+                if (!hasData && currentTableData.length > 0) {
+                    if (!confirm("The table seems to contain only empty rows. Do you still want to proceed? (No events will likely be created)")) {
+                        event.preventDefault();
+                        return;
+                    }
+                } else if (currentTableData.length === 0) {
+                     alert("The table is empty. Please add some schedule data.");
+                     event.preventDefault();
+                     return;
+                }
+
+
+                // 2. Put data into the hidden input as JSON string
+                editedDataInput.value = JSON.stringify(currentTableData);
+
+                // 3. Validate date inputs
+                const startDateInput = document.getElementById('start_date');
+                const endDateInput = document.getElementById('end_date');
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+
+                if (!startDate || !endDate) {
+                    alert("Please select both a start and end date.");
+                    startDateInput.reportValidity(); // Show browser validation UI
+                    endDateInput.reportValidity();
+                    event.preventDefault(); // Stop submission
+                    return;
+                }
+                 if (new Date(endDate) < new Date(startDate)) {
+                    alert("End date cannot be before start date.");
+                    endDateInput.setCustomValidity("End date cannot be before start date."); // Set validation message
+                    endDateInput.reportValidity();
+                    event.preventDefault(); // Stop submission
+                    return;
+                } else {
+                     endDateInput.setCustomValidity(""); // Clear validation message if ok
+                }
+
+
+                // 4. Disable button and show spinner
+                submitButton.disabled = true;
+                submitButton.classList.add('processing');
+                buttonText.textContent = 'Adding Events...';
+
+                // Form will now submit
+            });
+
+             // Reset button on page back navigation
+            window.addEventListener('pageshow', function(event) {
+              if (event.persisted && submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.classList.remove('processing');
+                 buttonText.textContent = 'Add to Google Calendar';
+              }
+            });
+        }
+
+         // --- Set Default Dates ---
+         // Use Luxon if available for robust date handling, otherwise fallback
+         const DateTime = window.luxon ? window.luxon.DateTime : null;
+
+         const formatDate = (dateObj) => {
+             // Format date as YYYY-MM-DD
+             const year = dateObj.year;
+             const month = String(dateObj.month).padStart(2, '0');
+             const day = String(dateObj.day).padStart(2, '0');
+             return `${year}-${month}-${day}`;
+         }
+
+         const startDateInput = document.getElementById('start_date');
+         const endDateInput = document.getElementById('end_date');
+
+         if(startDateInput && !startDateInput.value) { // Only set if empty
+             const today = DateTime ? DateTime.local() : new Date();
+             startDateInput.value = DateTime ? formatDate(today) : today.toISOString().split('T')[0];
+         }
+         if(endDateInput && !endDateInput.value) { // Only set if empty
+             const futureDate = DateTime ? DateTime.local().plus({ months: 3 }) : new Date(new Date().setMonth(new Date().getMonth() + 3));
+             endDateInput.value = DateTime ? formatDate(futureDate) : futureDate.toISOString().split('T')[0];
+         }
+
+    </script>
+</body>
+</html>

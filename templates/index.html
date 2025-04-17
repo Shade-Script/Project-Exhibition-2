@@ -1,78 +1,126 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weekly Scheduler</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Timetable OCR to Google Calendar</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        body { padding-top: 40px; padding-bottom: 40px; background-color: #f5f5f5; }
+        .container { max-width: 600px; }
+        .form-signin { padding: 15px; margin: 0 auto; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; cursor: pointer; }
+        .btn-upload { border: 2px solid #dee2e6; color: #495057; background-color: white; padding: 8px 20px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out; }
+        .btn-upload:hover { background-color: #e9ecef; border-color: #adb5bd;}
+        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+        .file-name { margin-left: 10px; font-style: italic; color: #6c757d; }
+        .spinner-border { display: none; /* Hidden by default */ }
+        .processing { cursor: not-allowed; opacity: 0.7; }
+        .processing .spinner-border { display: inline-block; /* Show spinner when processing */ }
+        .processing span:not(.spinner-border) { vertical-align: middle; margin-left: 5px; } /* Align text next to spinner */
+        /* Style for image preview */
+        #image-preview-container { margin-top: 20px; text-align: center; }
+        #image-preview { max-width: 100%; max-height: 300px; border: 1px solid #ddd; display: none; /* Hidden initially */ margin: 0 auto; background-color: #fff; padding: 5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+        .alert { text-align: left; } /* Align alert text left */
+    </style>
 </head>
-<body>
-    <div class="header">
-        <img class="logo" src="{{ url_for('static', filename='white_logo.png') }}" alt="Logo">
-    </div>
+<body class="text-center">
+    <div class="container">
+        <main class="form-signin">
+            <img class="mb-4" src="https://img.icons8.com/color/96/000000/google-calendar.png" alt="Calendar Icon" width="72" height="72">
+            <h1 class="h3 mb-3 fw-normal">Upload Timetable Image</h1>
 
-    <div class="background-image"></div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
 
-    <div class="content">
-        <h1>Weekly Scheduler</h1>
-        {% if not timetable %}
-            <form method="post" enctype="multipart/form-data" action="/upload">
-                <label for="schedule_image">Upload Your Schedule Image:</label>
-                <input type="file" id="schedule_image" name="schedule_image" accept="image/*" required>
-                <br><br>
-                <!-- Display Options Form -->
-                <div>
-                    <label>Display Options:</label>
-                    <input type="checkbox" name="display_options" value="course_code" {% if 'course_code' in selected_options %}checked{% endif %}> Course Code
-                    <input type="checkbox" name="display_options" value="course_name" {% if 'course_name' in selected_options %}checked{% endif %}> Course Name
-                    <input type="checkbox" name="display_options" value="faculty_name" {% if 'faculty_name' in selected_options %}checked{% endif %}> Faculty Name
-                    <input type="checkbox" name="display_options" value="venue" {% if 'venue' in selected_options %}checked{% endif %}> Venue
+            <p class="text-muted">Upload an image of your timetable. We'll extract the schedule using AI and help you add it to your Google Calendar.</p>
+            <hr/>
+
+            <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" id="upload-form">
+                <div class="mb-3 upload-btn-wrapper" onclick="document.getElementById('timetable_image').click();"> <!-- Make label clickable -->
+                    <button class="btn-upload" type="button">Choose Image</button>
+                    <input type="file" name="timetable_image" id="timetable_image" accept="image/png, image/jpeg, image/gif, image/webp" required onchange="displayFileNameAndPreview()" style="display: none;"> <!-- Hide actual input -->
+                    <span class="file-name" id="file-name-display">No file chosen</span>
                 </div>
-                <button type="submit">Upload</button>
-            </form>
-        {% endif %}
 
-        {% if timetable %}
-        <!-- Timetable Display -->
-        <div class="results">
-            <h2>Extracted Timetable:</h2>
-            <form method="post" action="/submit_timetable">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Day / Time</th>
-                            {% set first_day = time_slots.keys() | first %}
-                            {% for slot_id, slot_info in time_slots[first_day].items() %}
-                                <th>{{ slot_info.start }} - {{ slot_info.end }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for day, slots in time_slots.items() %}
-                            <tr>
-                                <td class="day-cell">{{ day }}</td>
-                                {% for slot_id, slot_info in slots.items() %}
-                                    <td class="schedule-cell">
-                                        {% for info in timetable[day][slot_id] %}
-                                            {{ info | join(", ") | trim }}
-                                        {% endfor %}
-                                        <input type="hidden" name="timetable_data[{{day}}][{{slot_id}}]" value="{% for info in timetable[day][slot_id] %}{{ info | join(", ") | trim }}{% endfor %}">
-                                    </td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <button type="submit">Submit</button>
-            </form>
-        </div>
-        {% endif %}
+                 <!-- Image Preview Area -->
+                <div id="image-preview-container">
+                    <img id="image-preview" src="#" alt="Image Preview"/>
+                </div>
 
-        {% if error_message %}
-        <div class="error">
-            <p>{{ error_message }}</p>
-        </div>
-        {% endif %}
+                <button class="w-100 btn btn-lg btn-primary mt-3" type="submit" id="submit-button">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Upload and Process</span>
+                </button>
+            </form>
+             <p class="mt-5 mb-3 text-muted">© Timetable App 2024</p>
+        </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function displayFileNameAndPreview() {
+            const input = document.getElementById('timetable_image');
+            const fileNameDisplay = document.getElementById('file-name-display');
+            const imagePreview = document.getElementById('image-preview');
+
+            if (input.files && input.files[0]) {
+                // Display file name
+                fileNameDisplay.textContent = input.files[0].name;
+
+                // Display image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block'; // Show the preview element
+                }
+                reader.readAsDataURL(input.files[0]); // Read the file as a data URL
+            } else {
+                fileNameDisplay.textContent = 'No file chosen';
+                imagePreview.src = '#'; // Reset src
+                imagePreview.style.display = 'none'; // Hide the preview element
+            }
+        }
+
+        const form = document.getElementById('upload-form');
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = submitButton.querySelector('span:not(.spinner-border)'); // Get the text span
+        const spinner = submitButton.querySelector('.spinner-border');
+
+        form.addEventListener('submit', function(event) { // Added event parameter
+            // Basic validation: Check if a file is selected
+            const input = document.getElementById('timetable_image');
+            if (!input.files || input.files.length === 0) {
+                 alert('Please choose an image file first.');
+                 event.preventDefault(); // Stop form submission
+                 return;
+            }
+            // Disable button and show spinner
+            submitButton.disabled = true;
+            submitButton.classList.add('processing');
+            buttonText.textContent = 'Processing...'; // Change only text content
+        });
+
+        // Optional: Reset button if user navigates back using browser history
+        window.addEventListener('pageshow', function(event) {
+          // event.persisted is true if page is loaded from bfcache (back/forward navigation)
+          if (event.persisted) {
+             submitButton.disabled = false;
+             submitButton.classList.remove('processing');
+             buttonText.textContent = 'Upload and Process';
+             // Optionally clear the file input and preview (might require input reset)
+             // document.getElementById('timetable_image').value = ""; // May not work due to security
+             // displayFileNameAndPreview();
+          }
+        });
+    </script>
 </body>
 </html>

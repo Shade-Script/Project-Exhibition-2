@@ -7,6 +7,15 @@ body {
   min-height: 100vh;
 }
 
+#image-preview {
+  display: none;
+  max-width: 400px;
+  max-height: 400px;
+  margin-top: 15px; 
+  border: 1px solid #ddd;
+  object-fit: contain;
+}
+
 .header {
   background-color: #00529B;
   padding: 20px;
